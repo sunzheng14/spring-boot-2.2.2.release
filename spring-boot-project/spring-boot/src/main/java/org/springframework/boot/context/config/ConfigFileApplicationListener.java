@@ -292,17 +292,17 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 	private class Loader {
 
 		private final Log logger = ConfigFileApplicationListener.this.logger;
-
+		//当前环境
 		private final ConfigurableEnvironment environment;
 
 		private final PropertySourcesPlaceholdersResolver placeholdersResolver;
-
+		//类加载器，可以在项目启动时通过 SpringApplication 构造方法指定，默认采用 Launcher.AppClassLoader加载器
 		private final ResourceLoader resourceLoader;
-
+		//资源加载工具类
 		private final List<PropertySourceLoader> propertySourceLoaders;
-
+		//LIFO队列
 		private Deque<Profile> profiles;
-
+		//已处理过的文件
 		private List<Profile> processedProfiles;
 
 		private boolean activatedProfiles;
@@ -314,6 +314,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 		Loader(ConfigurableEnvironment environment, ResourceLoader resourceLoader) {
 			this.environment = environment;
 			this.placeholdersResolver = new PropertySourcesPlaceholdersResolver(this.environment);
+			//获取类加载器
 			this.resourceLoader = (resourceLoader != null) ? resourceLoader : new DefaultResourceLoader();
 			this.propertySourceLoaders = SpringFactoriesLoader.loadFactories(PropertySourceLoader.class,
 					getClass().getClassLoader());
@@ -326,7 +327,9 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 						this.processedProfiles = new LinkedList<>();
 						this.activatedProfiles = false;
 						this.loaded = new LinkedHashMap<>();
+						//初始化逻辑
 						initializeProfiles();
+						//定位解析资源文件
 						while (!this.profiles.isEmpty()) {
 							Profile profile = this.profiles.poll();
 							if (isDefaultProfile(profile)) {
@@ -336,6 +339,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 									addToLoaded(MutablePropertySources::addLast, false));
 							this.processedProfiles.add(profile);
 						}
+						//对加载过的配置文件进行排序
 						load(null, this::getNegativeProfileFilter, addToLoaded(MutablePropertySources::addFirst, true));
 						addLoadedPropertySources();
 						applyActiveProfiles(defaultProperties);
@@ -350,6 +354,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 		private void initializeProfiles() {
 			// The default profile for these purposes is represented as null. We add it
 			// first so that it is processed first and has lowest priority.
+			//这里添加一个为null的profile，主要是加载默认的配置文件
 			this.profiles.add(null);
 			Set<Profile> activatedViaProperty = getProfilesFromProperty(ACTIVE_PROFILES_PROPERTY);
 			Set<Profile> includedViaProperty = getProfilesFromProperty(INCLUDE_PROFILES_PROPERTY);
@@ -398,6 +403,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 				this.logger.debug("Activated activeProfiles " + StringUtils.collectionToCommaDelimitedString(profiles));
 			}
 			this.activatedProfiles = true;
+			//删除默认的配置文件，即application-default.* 文件
 			removeUnprocessedDefaultProfiles();
 		}
 
